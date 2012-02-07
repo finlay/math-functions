@@ -17,6 +17,7 @@ module Numeric.MathFunctions.Constants
     , m_1_sqrt_2
     , m_2_sqrt_pi
     , m_ln_sqrt_2_pi
+    , m_ln_sqrt_pi_2
     , m_max_exp
     , m_sqrt_2
     , m_sqrt_2_pi
@@ -68,6 +69,11 @@ m_epsilon = encodeFloat (signif+1) expo - 1.0
 m_ln_sqrt_2_pi :: Double
 m_ln_sqrt_2_pi = 0.9189385332046727417803297364056176398613974736377834128171
 {-# INLINE m_ln_sqrt_2_pi #-}
+
+-- | @log(sqrt((pi/2))@
+m_ln_sqrt_pi_2 :: Double
+m_ln_sqrt_pi_2 = 0.225791352644727432363097614947
+{-# INLINE m_ln_sqrt_pi_2 #-}
 
 -- | Positive infinity.
 m_pos_inf :: Double

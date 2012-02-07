@@ -13,6 +13,7 @@ module Numeric.SpecFunctions (
     -- * Gamma function
     logGamma
   , logGammaL
+  , logGammaFN
   , incompleteGamma
   , invIncompleteGamma
     -- * Beta function
@@ -36,11 +37,13 @@ module Numeric.SpecFunctions (
 import Data.Bits       ((.&.), (.|.), shiftR)
 import Data.Int        (Int64)
 import Data.Word       (Word64)
+import Data.List       (foldl')
 import Data.Number.Erf (erfc)
 import qualified Data.Vector.Unboxed as U
 
 import Numeric.Polynomial.Chebyshev    (chebyshevBroucke)
-import Numeric.MathFunctions.Constants (m_epsilon, m_sqrt_2_pi, m_ln_sqrt_2_pi, 
+import Numeric.MathFunctions.Constants (m_epsilon, m_sqrt_2_pi, 
+                                        m_ln_sqrt_2_pi, m_ln_sqrt_pi_2, 
                                         m_NaN, m_neg_inf, m_pos_inf, m_sqrt_2)
 
 
@@ -159,6 +162,76 @@ logGammaCorrection x
                0.2683181998482698748957538846666e-17
              ]
 
+
+-- | less accurate way of calculating log gamma
+-- | based on algorithm by Fullerton 
+-- | see. http://people.sc.fsu.edu/~jburkardt/f77_src/fn/fn.html
+logGammaFN :: Double -> Double
+logGammaFN x 
+    | y <= 10      = (log . abs . gammafn) x
+    | y > xmax     = m_pos_inf
+    | x > 1e17     = x * (log x) - 1
+    | x > 4934720  = m_ln_sqrt_2_pi + (x - 0.5) * (log x) - x
+    | x > 0        = m_ln_sqrt_2_pi + (x - 0.5) * (log x) - x + logGammaCorrection x
+    | otherwise    = m_ln_sqrt_pi_2 + (x - 0.5) * (log y) - x - (log sinpiy) -logGammaCorrection y
+    where 
+        y = abs x
+        xmax = 2.5327372760800758e+305
+        sinpiy = abs (sin (pi * y))
+        gammafn :: Double -> Double
+        gammafn x
+            | n == 0    = value
+            | n < 0     = foldl' (\ v i -> v / (x  + fromIntegral i) ) value [0 .. -(n+1)]
+            | otherwise = foldl' (\ v i -> v * (y' + fromIntegral i) ) value [1 .. n]
+
+            where
+                n = floor x - 1 :: Int
+                y' = x - fromIntegral (n + 1)
+                -- x =  n + 1 + y' where  0 <= y' < 1
+                value = (chebyshevBroucke (y' * 2 - 1) gamcs) + 0.9375
+                gamcs = U.fromList [
+                     0.8571195590989331421920062399942e-2,
+                     0.4415381324841006757191315771652e-2,
+                     0.5685043681599363378632664588789e-1,
+                    -0.4219835396418560501012500186624e-2,
+                     0.1326808181212460220584006796352e-2,
+                    -0.1893024529798880432523947023886e-3,
+                     0.3606925327441245256578082217225e-4,
+                    -0.6056761904460864218485548290365e-5,
+                     0.1055829546302283344731823509093e-5,
+                    -0.1811967365542384048291855891166e-6,
+                     0.3117724964715322277790254593169e-7,
+                    -0.5354219639019687140874081024347e-8,
+                     0.9193275519859588946887786825940e-9,
+                    -0.1577941280288339761767423273953e-9,
+                     0.2707980622934954543266540433089e-10,
+                    -0.4646818653825730144081661058933e-11,
+                     0.7973350192007419656460767175359e-12,
+                    -0.1368078209830916025799499172309e-12,
+                     0.2347319486563800657233471771688e-13,
+                    -0.4027432614949066932766570534699e-14,
+                     0.6910051747372100912138336975257e-15,
+                    -0.1185584500221992907052387126192e-15,
+                     0.2034148542496373955201026051932e-16,
+                    -0.3490054341717405849274012949108e-17,
+                     0.5987993856485305567135051066026e-18,
+                    -0.1027378057872228074490069778431e-18,
+                     0.1762702816060529824942759660748e-19,
+                    -0.3024320653735306260958772112042e-20,
+                     0.5188914660218397839717833550506e-21,
+                    -0.8902770842456576692449251601066e-22,
+                     0.1527474068493342602274596891306e-22,
+                    -0.2620731256187362900257328332799e-23,
+                     0.4496464047830538670331046570666e-24,
+                    -0.7714712731336877911703901525333e-25,
+                     0.1323635453126044036486572714666e-25,
+                    -0.2270999412942928816702313813333e-26,
+                     0.3896418998003991449320816639999e-27,
+                    -0.6685198115125953327792127999999e-28,
+                     0.1146998663140024384347613866666e-28,
+                    -0.1967938586345134677295103999999e-29,
+                     0.3376448816585338090334890666666e-30,
+                    -0.5793070335782135784625493333333e-31 ]
 
 
 -- | Compute the normalized lower incomplete gamma function
@@ -491,7 +564,7 @@ stirlingError :: Double -> Double
 stirlingError n
   | n <= 15.0   = case properFraction (n+n) of
                     (i,0) -> sfe `U.unsafeIndex` i
-                    _     -> logGamma (n+1.0) - (n+0.5) * log n + n -
+                    _     -> logGammaFN (n+1.0) - (n+0.5) * log n + n -
                              m_ln_sqrt_2_pi
   | n > 500     = (s0-s1/nn)/n
   | n > 80      = (s0-(s1-s2/nn)/nn)/n

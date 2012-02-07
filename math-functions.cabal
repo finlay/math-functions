@@ -28,6 +28,9 @@ library
     Numeric.Polynomial.Chebyshev
     Numeric.MathFunctions.Constants
 
+  -- gather extensive profiling data for now
+  ghc-prof-options: -auto-all
+
 test-suite tests
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
