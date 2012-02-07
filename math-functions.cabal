@@ -31,6 +31,8 @@ library
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all
 
+  ghc-options: -O2 -Wall -funbox-strict-fields
+
 test-suite tests
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
