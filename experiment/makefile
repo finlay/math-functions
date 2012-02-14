@@ -1,4 +1,4 @@
-all: differences.svg
+all: differences.svg logGammaTest.html
 
 logGammaTest.html: logGammaTest.md
 		pandoc -t html -o logGammaTest.html logGammaTest.md
