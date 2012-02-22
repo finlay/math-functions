@@ -181,8 +181,8 @@ logGammaFN x
         gammafn :: Double -> Double
         gammafn x
             | n == 0    = value
-            | n < 0     = foldl' (\ v i -> v / (x  + fromIntegral i) ) value [0 .. -(n+1)]
-            | otherwise = foldl' (\ v i -> v * (y' + fromIntegral i) ) value [1 .. n]
+            | n < 0     = U.foldl' (\v i -> v / (x  - i) ) value $ U.enumFromN 0 (abs n)
+            | otherwise = U.foldl' (\v i -> v * (y' + i) ) value $ U.enumFromN 1 n
 
             where
                 n = floor x - 1 :: Int
